@@ -12,8 +12,9 @@
 
     /* Language and Environment */
     "target": "esnext",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "lib": ["ESNext"],                                        /* Specify a set of bundled library declaration files that describe the target runtime environment. */
+    "lib": ["ESNext", "DOM"],                                        /* Specify a set of bundled library declaration files that describe the target runtime environment. */
     "libReplacement": true,                           /* Enable lib replacement. */
+    "jsx": "preserve",
     // "experimentalDecorators": true,                   /* Enable experimental support for legacy experimental decorators. */
     // "emitDecoratorMetadata": true,                    /* Emit design-type metadata for decorated declarations in source files. */
     // "useDefineForClassFields": true,                  /* Emit ECMAScript-standard-compliant class fields. */
