@@ -1,0 +1,30 @@
+{
+  "name": "",
+  "version": "0.0.0",
+  "description": "Template for javascript library",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:cover": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/<username>/<repo>.git"
+  },
+  "keywords": [
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/<username>/<repo>/issues"
+  },
+  "homepage": "https://github.com/<username>/<repo>#readme",
+  "devDependencies": {
+    "@types/node": "^24.0.12",
+    "@vitest/coverage-v8": "^3.2.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

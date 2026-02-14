@@ -1,0 +1,17 @@
+name: Test source code
+run-name: Run tests
+on:
+  workflow_call: {}
+  push:
+    branches:
+      - "*"
+jobs:
+  Run-Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+      - run: "npm install"
+      - run: "npm run test:cover"
