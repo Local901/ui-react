@@ -1,5 +1,5 @@
 import type { ParentElement } from "../types/Element.js";
-import { splitChildrenOfType } from "../utility/SearchChildren.js";
+import { splitChildren, splitChildrenOfType } from "../utility/SearchChildren.js";
 import { Fallback } from "./Fallback.jsx";
 import { Show } from "./Show.jsx";
 
@@ -47,8 +47,9 @@ export const Switch: ParentElement & {
     Fallback: typeof Fallback,
 } = (props) => {
     let foundCase = false;
+    const [list, other] = splitChildren(props.children, () => true);
     return <>
-        {props.children?.map((child) => {
+        {list.map((child) => {
             if (child.type === Switch.Fallback) {
                 return () => Show({ when: () => !foundCase, children: child.props.children });
             } else if (child.type === Switch.Case) {
@@ -63,6 +64,7 @@ export const Switch: ParentElement & {
             }
             return child;
         })}
+        {other}
     </>
 }
 

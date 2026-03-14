@@ -1,6 +1,7 @@
 import type { ElementType, JSX } from "react";
+import type { ChildType } from "../types/Element.ts";
 
-export type SplitResponse = [JSX.Element[], JSX.Element[]];
+export type SplitResponse = [JSX.Element[], ChildType];
 
 /**
  * Split the list of children into matching and mismatching respectively.
@@ -9,7 +10,10 @@ export type SplitResponse = [JSX.Element[], JSX.Element[]];
  * @param callback Callback to check if a child should be split.
  * @returns [match[], mismatch[]]
  */
-export function splitChildren(children: JSX.Element[] | undefined, callback: (element: JSX.Element) => boolean): SplitResponse {
+export function splitChildren(children: ChildType, callback: (element: JSX.Element) => boolean): SplitResponse {
+    if (!Array.isArray(children)) {
+        return [[], children]
+    }
     const response: [JSX.Element[], JSX.Element[]] = [[], []];
 
     if (!children) {
@@ -34,6 +38,6 @@ export function splitChildren(children: JSX.Element[] | undefined, callback: (el
  * @param type Element type.
  * @returns [match[], mismatch[]]
  */
-export function splitChildrenOfType<TYPE extends ElementType = ElementType>(children: JSX.Element[] | undefined, type: TYPE): SplitResponse {
+export function splitChildrenOfType<TYPE extends ElementType = ElementType>(children: ChildType, type: TYPE): SplitResponse {
     return splitChildren(children, (child) => child.type === type);
 }

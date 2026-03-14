@@ -7,7 +7,7 @@ import { Show } from "./Show.jsx";
  * Guard internal elements until state is an error. Else `<Error.Fallback>`
  */
 export const WhenError: ParentElement<{ state: ProcessFlags }> & { Fallback: typeof Fallback } = (props) => {
-    return Show({ ...props, when: () => (props.state & ProcessFlags.ERROR) === ProcessFlags.ERROR });
+    return Show({ children: props.children, when: () => (props.state & ProcessFlags.ERROR) === ProcessFlags.ERROR });
 }
 
 WhenError.Fallback = Fallback;

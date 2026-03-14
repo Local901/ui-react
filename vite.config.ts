@@ -5,13 +5,7 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
 
-  root: "playground", // 👈 important
-
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"), // import library easily
-    },
-  },
+  root: "playground",
 
   server: {
     port: 5173,

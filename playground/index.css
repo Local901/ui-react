@@ -1,3 +1,39 @@
 body {
     margin: 0;
+    background-color: rgb(243, 243, 236);
+}
+
+* {
+    box-sizing: border-box;
+}
+pre {
+    margin: 0;
+    font-family: inherit;
+}
+
+.ui-button {
+    padding: 0.5em;
+    border-radius: 2em;
+    background-color: #243a6b;
+    border: 1px solid white;
+    color: rgb(223, 223, 209);
+}
+
+.box {
+    padding: 1em;
+    margin-bottom: 1em;
+    background-color: #cccccc;
+    border-radius: 2em;
+}
+
+.ui-drawer {
+    background-color: red;
+    transition: 1s ease;
+    width: max-content;
+}
+.ui-drawer.direction-horizontal {
+    text-align: end;
+}
+.ui-drawer.direction-vertical {
+    height: 1.2em;
 }

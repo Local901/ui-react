@@ -1,19 +1,27 @@
 import { useRef } from "react";
 
-export interface Controls {
+export interface BaseControls {
     open: () => void;
     close: () => void;
 }
 
-export interface Controller extends Controls {
-    register: (controls: Controls) => () => void;
+export interface Controls extends BaseControls {
+    switch: () => void;
+    isOpen: () => boolean;
 }
 
-export function useController() {
-    const controlList = useRef<Controls[]>([]);
+export interface Controller extends Controls {
+    register: (controls: BaseControls) => () => void;
+}
 
-    const call = (event: keyof Controls): void => {
-        for (const control of controlList.current) {
+export function useController(open = false) {
+    const controlData = useRef<{ isOpen: boolean, controls: BaseControls[]}>({
+        isOpen: open,
+        controls: [],
+    });
+
+    const call = (event: keyof BaseControls): void => {
+        for (const control of controlData.current.controls) {
             try {
                 control[event]();
             } catch (e) {
@@ -23,12 +31,26 @@ export function useController() {
     }
     
     return {
-        open: () => call("open"),
-        close: () => call("close"),
+        open: () => {
+            controlData.current.isOpen = true;
+            call("open");
+        },
+        close: () => {
+            controlData.current.isOpen = false;
+            call("close");
+        },
+        switch: () => {
+            controlData.current.isOpen = !controlData.current.isOpen;
+            call(controlData.current.isOpen ? "open" : "close");
+        },
+        isOpen: () => controlData.current.isOpen,
         register: (controls) => {
-            controlList.current.push(controls);
+            controlData.current.controls.push(controls);
             return () => {
-                controlList.current.splice(controlList.current.indexOf(controls), 1);
+                controlData.current.controls.splice(
+                    controlData.current.controls.indexOf(controls),
+                    1,
+                );
             }
         },
     } satisfies Controller;
