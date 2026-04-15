@@ -50,7 +50,7 @@ export const GridItem: ParentElement<GridItemProperties> = (props) => {
  * - ui-grid
  * - ui-grid-item
  */
-export const Grid: ParentElement<GridProperties> & { GridItem: typeof GridItem } = (props) => {
+export const Grid: ParentElement<GridProperties> & { Item: typeof GridItem } = (props) => {
     const columnDef = (props.width === undefined || typeof props.width === "number")
         ? " auto".repeat(props.width ?? 12).trimStart()
         : props.width ?? undefined;
@@ -71,4 +71,4 @@ export const Grid: ParentElement<GridProperties> & { GridItem: typeof GridItem }
     </div>
 }
 
-Grid.GridItem = GridItem;
+Grid.Item = GridItem;
