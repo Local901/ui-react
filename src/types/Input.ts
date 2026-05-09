@@ -1,5 +1,7 @@
+import type { Input } from "../hooks/Input.js";
 
-export interface InputProperties {
+export interface InputProperties<T> {
+    input: Input<T>;
     /**
      * Disable the input element.
      *

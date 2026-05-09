@@ -1,6 +1,6 @@
 import { useReducer, useRef, type ActionDispatch } from "react";
 
-type Primitive = string | number | boolean | bigint | symbol | null | undefined | Date | URL | Buffer | Uint8Array;
+type Primitive = string | number | boolean | bigint | symbol | null | undefined | Date | URL | Uint8Array | File;
 
 type IsTuple<T> =
     T extends readonly unknown[]
@@ -22,30 +22,33 @@ type IsPlainObject<T> =
                     : true
         : false;
 
-type PathType<T, Prefix extends string = ""> =
-    // include current level
-    (Prefix extends "" ? { "": T } : { [K in Prefix]: T }) &
-
-    // recurse into object properties
-    (IsPlainObject<T> extends true
+type NestedPaths<T> = 
+    IsPlainObject<T> extends true
         ? {
-            [K in keyof T & (IsTuple<T> extends true ? `${number}` : string)]:
-                IsTuple<T> extends true
-                    ? T[K]
-                : PathType<
-                    T[K],
-                    Prefix extends ""
-                        ? `${K}`
-                        : `${Prefix}.${K}`
-                >
-        }[keyof T & (IsTuple<T> extends true ? `${number}` : string)]
-        : {});
+            [K in keyof T & string]:
+                | K
+                | `${K}.${NestedPaths<T[K]>}`
+        }[keyof T & string]
+        : never;
 
-type Paths<T> = keyof PathType<T> & string;
+type Paths<T> = "" | NestedPaths<T>;
+
+type PathValue<T, P extends Paths<T>> =
+    P extends `${infer K}.${infer Rest}`
+        ? K extends keyof T
+            ? Rest extends Paths<T[K]>
+                ? PathValue<T[K], Rest>
+                : never
+            : never
+        : P extends keyof T
+            ? T[P]
+            : P extends ""
+                ? T
+                : never;
 
 export interface Input<T> {
     use(): T;
-    getInput<P extends Paths<T> = "">(path?: P): Input<PathType<T>[P]>;
+    getInput<const P extends Paths<T>>(path: P): Input<PathValue<T, P>>;
     /**
      * Get the value of the input or a sub-value.
      * 
@@ -54,33 +57,33 @@ export interface Input<T> {
      * @param path Path to the value.
      * @returns The value that is currently stored.
      */
-    get<P extends Paths<T> = "">(path?: P): PathType<T>[P];
+    get<const P extends Paths<T>>(path?: P): PathValue<T, P>;
     /**
      * Set a value in the input. This will trigger rerenders.
      *
      * @param value The value to set.
      * @param path Path to the value.
      */
-    set<P extends Paths<T> = "">(value: PathType<T>[P], path?: P): void;
+    set<const P extends Paths<T>>(value: PathValue<T, P>, path?: P): void;
     /**
      * Reset the value back to the default value. This will trigger rerenders.
      * 
      * @param path Path to the value.
      */
-    reset<P extends Paths<T> = "">(path?: P): void;
+    reset<const P extends Paths<T>>(path?: P): void;
     /**
      * Get the default value.
      * 
      * @param path Path to the value.
      */
-    getDefault<P extends Paths<T> = "">(path?: P): PathType<T>[P];
+    getDefault<const P extends Paths<T>>(path?: P): PathValue<T, P>;
     /**
      * Will update the default value. But this will not trigger rerenders.
      * 
      * @param value The value to set.
      * @param path Path to the value.
      */
-    setDefault<P extends Paths<T> = "">(value: PathType<T>[P], path?: P): void;
+    setDefault<const P extends Paths<T>>(value: PathValue<T, P>, path?: P): void;
     /**
      * Trigger rerender fot this input.
      * 
@@ -99,15 +102,15 @@ function mergePaths(root: string, subPath: string = ""): string {
     return `${root}.${subPath}`;
 }
 
-class InputClass<ROOT, PATH extends Paths<ROOT>> implements Input<PathType<ROOT>[PATH]> {
+class InputClass<ROOT, T> implements Input<T> {
     private reducers: ActionDispatch<[]>[] = [];
-    public constructor(
-        private rootInput: RootInput<ROOT>,
-        private readonly path: PATH,
-    ) {}
+public constructor(
+    private rootInput: RootInput<ROOT>,
+    private readonly path: string,
+) {}
 
     /** @inheritDoc */
-    public use(): PathType<ROOT>[PATH] {
+    public use(): T {
         const index = useRef<number | undefined>(undefined);
         const [_value, reducer] = useReducer((prev) => ++prev, 0);
 
@@ -116,49 +119,39 @@ class InputClass<ROOT, PATH extends Paths<ROOT>> implements Input<PathType<ROOT>
         }
         this.reducers[index.current] = reducer;
 
-        return this.rootInput.get(this.path);
+        return this.get("") as T;
     }
     /** @inheritDoc */
-    public rerender(): void {
+    public rerender = (): void => {
         for(const reducer of this.reducers) {
-            reducer();
+            try {
+                reducer();
+            } catch (e) {}
         }
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public getInput<P extends Paths<PathType<ROOT, PATH>> = "">(path?: P): Input<PathType<PathType<ROOT>[PATH]>[P]> {
-        // @ts-expect-error Complex type.
-        return this.rootInput.getInput(mergePaths(this.path, path));
+    public getInput = <const P extends Paths<T>>(path: P): Input<PathValue<T, P>> => {
+        return this.rootInput.getInput(mergePaths(this.path, path) as Paths<ROOT>) as Input<PathValue<T, P>>;
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public get<P extends Paths<PathType<ROOT, PATH>> = "">(path?: P): PathType<PathType<ROOT>[PATH]>[P] {
-        // @ts-expect-error Complex type.
-        return this.rootInput.get(mergePaths(this.path, path));
+    public get = <const P extends Paths<T>>(path?: P): PathValue<T, P> => {
+        return this.rootInput.get(mergePaths(this.path, path) as Paths<ROOT>) as PathValue<T, P>;
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public set<P extends Paths<PathType<ROOT, PATH>> = "">(value: PathType<PathType<ROOT>[PATH]>[P], path?: P): void {
-        // @ts-expect-error Complex type.
-        return this.rootInput.set(mergePaths(this.path, path), value);
+    public set = <const P extends Paths<T>>(value: PathValue<T, P>, path?: P): void => {
+        return this.rootInput.set(mergePaths(this.path, path) as Paths<ROOT>, value as PathValue<ROOT, Paths<ROOT>>);
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public reset<P extends Paths<PathType<ROOT, PATH>> = "">(path?: P): void {
-        // @ts-expect-error Complex type.
-        return this.rootInput.reset(mergePaths(this.path, path));
+    public reset = <const P extends Paths<T>>(path?: P): void => {
+        return this.rootInput.reset(mergePaths(this.path, path) as Paths<ROOT>);
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public getDefault<P extends Paths<PathType<ROOT, PATH>> = "">(path?: P): PathType<PathType<ROOT>[PATH]>[P] {
-        // @ts-expect-error Complex type.
-        return this.rootInput.getDefault(mergePaths(this.path, path));
+    public getDefault = <const P extends Paths<T>>(path?: P): PathValue<T, P> => {
+        return this.rootInput.getDefault(mergePaths(this.path, path) as Paths<ROOT>) as PathValue<T, P>;
     }
     /** @inheritDoc */
-    // @ts-expect-error Complex type.
-    public setDefault<P extends Paths<PathType<ROOT, PATH>> = "">(value: PathType<PathType<ROOT>[PATH]>[P], path?: P): void {
-        // @ts-expect-error Complex type.
-        return this.setDefault(value, mergePaths(this.path, path));
+    public setDefault = <const P extends Paths<T>>(value: PathValue<T, P>, path?: P): void => {
+        return this.rootInput.setDefault(mergePaths(this.path, path) as Paths<ROOT>, value as PathValue<ROOT, Paths<ROOT>>);
     }
 }
 
@@ -176,7 +169,7 @@ class RootInput<T> {
 
     private processValue(path: string, value: unknown): unknown {
         const type = typeof value;
-        if (type !== "object" || [Date, URL, Buffer, Uint8Array].some((t) => value instanceof t)) {
+        if (type !== "object" || [Date, URL, Uint8Array, File].some((t) => value instanceof t)) {
             this.inputs[path] ??= { current: value };
             this.inputs[path].current = value;
             return value;
@@ -288,53 +281,53 @@ class RootInput<T> {
     }
 
     private triggerRerender(path: string): void {
-        for (const key of Object.keys(this.inputs)
-            .filter((k) => (k.startsWith(path) && (k.length === path.length || k[path.length] === ".")) || path.startsWith(`${k}.`))
-            .sort((k1, k2) => k1.length - k2.length)
-        ){
+        const keys = Object.keys(this.inputs)
+            .filter((k) => path === "" || (k.startsWith(path) && (k.length === path.length || k[path.length] === ".")) || path.startsWith(`${k}.`))
+            .sort((k1, k2) => k1.length - k2.length);
+        for (const key of keys){
             this.getData(key)?.input?.rerender();
         }
     }
 
-    public getInput<P extends Paths<T>>(path: P): Input<PathType<T>[P]> {
+    public getInput<P extends Paths<T>>(path: P): Input<PathValue<T, P>> {
         if (!this.inputs[path]) {
             this.inputs[path] = {
-                input: new InputClass<T, P>(this, path) as unknown as Input<unknown>,
+                input: new InputClass<T, PathValue<T, P>>(this, path) as unknown as Input<unknown>,
                 current: this.get(path),
             };
+        } else if (!this.inputs[path].input) {
+            this.inputs[path].input = new InputClass<T, PathValue<T, P>>(this, path) as unknown as Input<unknown>;
         }
-        return this.inputs[path].input as Input<PathType<T>[P]>;
+        return this.inputs[path].input as Input<PathValue<T, P>>;
     }
-    public get<P extends Paths<T>>(path: P): PathType<T>[P] {
-        return this.getData(path)?.current as PathType<T>[P];
+    public get<P extends Paths<T>>(path: P): PathValue<T, P> {
+        return this.getData(path)?.current as PathValue<T, P>;
     }
 
-    public set<P extends Paths<T>>(path: P, value: PathType<T>[P]): void {
+    public set<P extends Paths<T>>(path: P, value: PathValue<T, P>): void {
         // Will process Value and update parent object. (We always want to do this on set.)
         this.deepClear(path);
         this.insertValue(path, value);
 
-        const data = this.get(path);
-
         this.triggerRerender(path);
     }
 
-    public getDefault<P extends Paths<T>>(path: P): PathType<T>[P] {
+    public getDefault<P extends Paths<T>>(path: P): PathValue<T, P> {
         if (!path) {
-            return this.defaults as PathType<T>[P];
+            return this.defaults as PathValue<T, P>;
         }
         const sections = path.split(".");
         let current: unknown = this.defaults;
         while(sections.length) {
             if (!current || typeof current !== "object") {
-                return undefined as unknown as PathType<T>[P];
+                return undefined as unknown as PathValue<T, P>;
             }
             current = (current as Record<string, unknown>)[sections.shift()!]
         }
-        return current as PathType<T>[P];
+        return current as PathValue<T, P>;
     }
 
-    public setDefault<P extends Paths<T>>(path: P, value: PathType<T>[P]): void {
+    public setDefault<P extends Paths<T>>(path: P, value: PathValue<T, P>): void {
         if (!path) {
             this.defaults = value as T;
         }
@@ -369,5 +362,5 @@ export function useInput<T>(init: T): Input<T> {
     if (!controller.current) {
         controller.current = new RootInput(init);
     }
-    return controller.current.getInput("");
+    return controller.current.getInput("") as Input<T>;
 }

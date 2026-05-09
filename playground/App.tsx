@@ -1,5 +1,6 @@
 import { DialogTest } from "./sections/DialogTest.tsx";
 import { DrawerTest } from "./sections/DrawerTest.tsx";
+import { InputTest } from "./sections/InputTest.tsx";
 
 export default function App() {
     return (<>
@@ -10,6 +11,9 @@ export default function App() {
             </div>
             <div className="box">
                 <DrawerTest/>
+            </div>
+            <div className="box">
+                <InputTest/>
             </div>
         </div>
     </>);
