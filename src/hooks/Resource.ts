@@ -1,9 +1,9 @@
-import { ProcessFlags } from "../types/Process.js";
+import { ProcessFlag } from "../types/Process.js";
 import { useSignal } from "./Signal.js";
 
 export type ResourceCallback<T> = (refetching: boolean) => T | Promise<T>;
 export type ResourceValue<T> = {
-    state: ProcessFlags;
+    state: ProcessFlag;
     latest?: T;
     error?: unknown;
 }
@@ -14,36 +14,36 @@ export type ResourceControls<T> = {
 
 export function useResource<T>(callback: ResourceCallback<T>): [ResourceValue<T>, ResourceControls<T>] {
     const [value, setValue] = useSignal<ResourceValue<T>>({
-        state: ProcessFlags.LOADING,
+        state: ProcessFlag.LOADING,
     });
 
     const loadResource = async (refetching: boolean) => {
         try {
             const result = await callback(refetching);
             setValue({
-                state: ProcessFlags.READY,
+                state: ProcessFlag.READY,
                 latest: result,
             })
         } catch (error) {
             setValue({
-                state: ProcessFlags.ERROR,
+                state: ProcessFlag.ERROR,
                 error,
             });
         }
     }
 
-    if (value.state === ProcessFlags.LOADING) {
+    if (value.state === ProcessFlag.LOADING) {
         void loadResource(false);
     }
 
     return [value, {
         refetch: () => {
-            setValue((prev) => ({ ...prev, state: prev.state | ProcessFlags.LOADING }));
+            setValue((prev) => ({ ...prev, state: prev.state | ProcessFlag.LOADING }));
             void loadResource(true);
         },
         mutate: (value) => {
             setValue({
-                state: ProcessFlags.READY,
+                state: ProcessFlag.READY,
                 latest: value,
             });
         },

@@ -9,7 +9,7 @@
  * - 3 = LOADING & READY => REFETCHING
  * - 5 = LOADING & ERROR => RETRY
  */
-export enum ProcessFlags {
+export enum ProcessFlag {
     LOADING = 1,
     READY = 2,
     REFETCHING = 3,
